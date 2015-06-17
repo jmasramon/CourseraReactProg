@@ -3,12 +3,18 @@ package calculator
 object Polynomial {
   def computeDelta(a: Signal[Double], b: Signal[Double],
       c: Signal[Double]): Signal[Double] = {
-    new Signal(b.apply*b.apply - 4*a.apply*c.apply)
+    Signal(b()*b() - 4*a()*c())
   }
 
   def computeSolutions(a: Signal[Double], b: Signal[Double],
       c: Signal[Double], delta: Signal[Double]): Signal[Set[Double]] = {
-    if (delta.apply < 0 ) new Signal(Set(0.0))
-    else new Signal(Set((-b.apply+Math.sqrt(delta.apply))/(2*a.apply), (-b.apply-Math.sqrt(delta.apply))/(2*a.apply)))
+    
+    def relation(): Set[Double] = {
+      if (delta() < 0 ) Set(0.0)
+      else Set((-b()+Math.sqrt(delta()))/(2*a()), (-b()-Math.sqrt(delta()))/(2*a()))
+    }
+    
+    Signal(relation)
+    
   }
 }
