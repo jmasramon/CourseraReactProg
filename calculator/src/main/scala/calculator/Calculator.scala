@@ -16,7 +16,10 @@ object Calculator {
     
     val mapper = (name: String, expr: Signal[Expr]) => (name, Signal(evaluation(name)))
     
-    namedExpressions map {case (name: String, expr: Signal[Expr]) => mapper(name, expr)}
+    namedExpressions map {
+      		case (name: String, expr: Signal[Expr])  => if (!cyclicDependencies(expr(), namedExpressions, name)) mapper(name, expr)
+      																								else (name, Signal(Double.NaN))
+      }
   }
 
   def eval(expr: Expr, references: Map[String, Signal[Expr]]): Double = expr match {
@@ -38,4 +41,17 @@ object Calculator {
       exprSignal()
     }
   }
+  
+  def cyclicDependencies(expr: Expr, references: Map[String, Signal[Expr]], origName:String): Boolean = { 
+    def recurse (expr: Expr, references: Map[String, Signal[Expr]], origName:String): Boolean = expr match {
+	    case Literal(v:Double) => false
+	    case Ref(name: String) => if (name==origName) true else false
+	    case Plus(a: Expr, b: Expr) => recurse(a, references, origName) || recurse(b, references, origName)
+	    case Minus(a: Expr, b: Expr) => recurse(a, references, origName) || recurse(b, references, origName)
+	    case Times(a: Expr, b: Expr) => recurse(a, references, origName) || recurse(b, references, origName)
+	    case Divide(a: Expr, b: Expr) => recurse(a, references, origName) || recurse(b, references, origName)
+	  }
+    recurse(expr, references, origName)
+  }
+    
 }

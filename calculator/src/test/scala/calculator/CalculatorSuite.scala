@@ -50,5 +50,35 @@ class CalculatorSuite extends FunSuite with ShouldMatchers {
     val resultRed2 = TweetLength.colorForRemainingCharsCount(Var(-5))
     assert(resultRed2() == "red")
   }
+  
+  test("cyclicDependencies") {
+    var namedExpressions: Map[String, Signal[Expr]] = Map(("a",Signal(Literal(3))), ("b",Signal(Literal(2))), ("c",Signal(Plus(Ref("a"),Ref("b")))))
+    assert(Calculator.cyclicDependencies(Plus(Ref("a"),Ref("b")), namedExpressions, "c") == false)
+    
+    namedExpressions = Map(("a",Signal(Ref("a"))))
+    assert(Calculator.cyclicDependencies(Ref("a"), namedExpressions, "a") == true)
+    
+    namedExpressions = Map(("a",Signal(Literal(3))), ("b",Signal(Literal(2))), ("c",Signal(Plus(Ref("a"),Ref("b")))), ("d", Signal(Plus(Literal(1), Ref("d"))) ))
+    assert(Calculator.cyclicDependencies(Plus(Literal(1), Ref("d")), namedExpressions, "d") == true)
+    
+  }
+  
+  test("if cliclycDependencies, no evaluation should be performed") {
+    var namedExpressions: Map[String, Signal[Expr]] =  Map(("a",Signal(Ref("a"))))
+    val res: Double = Calculator.computeValues(namedExpressions).get("a").fold(0.0){value => value()}
+    assert(res.isNaN)
+  }
+  
+  test("if cyclicDependencies in some exp it should return NaN") {
+    var namedExpressions: Map[String, Signal[Expr]]  = Map(("a",Signal(Literal(3))), ("b",Signal(Literal(2))), ("c",Signal(Plus(Ref("a"),Ref("b")))), ("d", Signal(Plus(Literal(1), Ref("d"))) ))
+    assert(Calculator.cyclicDependencies(Plus(Literal(1), Ref("d")), namedExpressions, "d") == true)
+    val res: Map[String, Signal[Double]] = Calculator.computeValues(namedExpressions)
+    
+    assert(res.get("a").fold(0.0){value => value()} == 3.0)
+    assert(res.get("b").fold(0.0){value => value()} == 2.0)
+    assert(res.get("c").fold(0.0){value => value()} == 5.0)
+    assert(res.get("d").fold(0.0){value => value()}.isNaN)
+  }
+    
 
 }
